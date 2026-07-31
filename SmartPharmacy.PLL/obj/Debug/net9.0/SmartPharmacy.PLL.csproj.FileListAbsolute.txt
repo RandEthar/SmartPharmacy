@@ -1,0 +1,15 @@
+E:\API\SmartPharmacy\SmartPharmacy.PLL\bin\Debug\net9.0\SmartPharmacy.PLL.deps.json
+E:\API\SmartPharmacy\SmartPharmacy.PLL\bin\Debug\net9.0\SmartPharmacy.PLL.dll
+E:\API\SmartPharmacy\SmartPharmacy.PLL\bin\Debug\net9.0\SmartPharmacy.PLL.pdb
+E:\API\SmartPharmacy\SmartPharmacy.PLL\bin\Debug\net9.0\SmartPharmacy.DAL.dll
+E:\API\SmartPharmacy\SmartPharmacy.PLL\bin\Debug\net9.0\SmartPharmacy.DAL.pdb
+E:\API\SmartPharmacy\SmartPharmacy.PLL\obj\Debug\net9.0\SmartPharmacy.PLL.csproj.AssemblyReference.cache
+E:\API\SmartPharmacy\SmartPharmacy.PLL\obj\Debug\net9.0\SmartPharmacy.PLL.GeneratedMSBuildEditorConfig.editorconfig
+E:\API\SmartPharmacy\SmartPharmacy.PLL\obj\Debug\net9.0\SmartPharmacy.PLL.AssemblyInfoInputs.cache
+E:\API\SmartPharmacy\SmartPharmacy.PLL\obj\Debug\net9.0\SmartPharmacy.PLL.AssemblyInfo.cs
+E:\API\SmartPharmacy\SmartPharmacy.PLL\obj\Debug\net9.0\SmartPharmacy.PLL.csproj.CoreCompileInputs.cache
+E:\API\SmartPharmacy\SmartPharmacy.PLL\obj\Debug\net9.0\SmartPha.5F0FBA2E.Up2Date
+E:\API\SmartPharmacy\SmartPharmacy.PLL\obj\Debug\net9.0\SmartPharmacy.PLL.dll
+E:\API\SmartPharmacy\SmartPharmacy.PLL\obj\Debug\net9.0\refint\SmartPharmacy.PLL.dll
+E:\API\SmartPharmacy\SmartPharmacy.PLL\obj\Debug\net9.0\SmartPharmacy.PLL.pdb
+E:\API\SmartPharmacy\SmartPharmacy.PLL\obj\Debug\net9.0\ref\SmartPharmacy.PLL.dll

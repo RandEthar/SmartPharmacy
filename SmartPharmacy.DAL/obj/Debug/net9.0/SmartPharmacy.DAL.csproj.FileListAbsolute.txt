@@ -1,0 +1,14 @@
+E:\API\SmartPharmacy\SmartPharmacy.DAL\bin\Debug\net9.0\SmartPharmacy.DAL.deps.json
+E:\API\SmartPharmacy\SmartPharmacy.DAL\bin\Debug\net9.0\SmartPharmacy.DAL.runtimeconfig.json
+E:\API\SmartPharmacy\SmartPharmacy.DAL\bin\Debug\net9.0\SmartPharmacy.DAL.dll
+E:\API\SmartPharmacy\SmartPharmacy.DAL\bin\Debug\net9.0\SmartPharmacy.DAL.pdb
+E:\API\SmartPharmacy\SmartPharmacy.DAL\obj\Debug\net9.0\SmartPharmacy.DAL.csproj.AssemblyReference.cache
+E:\API\SmartPharmacy\SmartPharmacy.DAL\obj\Debug\net9.0\SmartPharmacy.DAL.GeneratedMSBuildEditorConfig.editorconfig
+E:\API\SmartPharmacy\SmartPharmacy.DAL\obj\Debug\net9.0\SmartPharmacy.DAL.AssemblyInfoInputs.cache
+E:\API\SmartPharmacy\SmartPharmacy.DAL\obj\Debug\net9.0\SmartPharmacy.DAL.AssemblyInfo.cs
+E:\API\SmartPharmacy\SmartPharmacy.DAL\obj\Debug\net9.0\SmartPharmacy.DAL.csproj.CoreCompileInputs.cache
+E:\API\SmartPharmacy\SmartPharmacy.DAL\obj\Debug\net9.0\SmartPharmacy.DAL.dll
+E:\API\SmartPharmacy\SmartPharmacy.DAL\obj\Debug\net9.0\refint\SmartPharmacy.DAL.dll
+E:\API\SmartPharmacy\SmartPharmacy.DAL\obj\Debug\net9.0\SmartPharmacy.DAL.pdb
+E:\API\SmartPharmacy\SmartPharmacy.DAL\obj\Debug\net9.0\SmartPharmacy.DAL.genruntimeconfig.cache
+E:\API\SmartPharmacy\SmartPharmacy.DAL\obj\Debug\net9.0\ref\SmartPharmacy.DAL.dll

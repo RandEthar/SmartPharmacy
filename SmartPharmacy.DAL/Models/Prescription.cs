@@ -6,7 +6,7 @@ namespace SmartPharmacy.DAL.Models
     {
         public int Id { get; set; }
         public String ImageUrl { get; set; }
-        public String Status { get; set; }
+        public PrescriptionStatusEnum Status { get; set; }
         public DateTime CreatedAt { get; set; }
 
         public int OrderId { get; set; }

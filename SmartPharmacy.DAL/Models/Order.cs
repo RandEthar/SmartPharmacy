@@ -1,3 +1,4 @@
+using SmartPharmacy.DAL.DTO.Request;
 using System;
 using System.Collections.Generic;
 
@@ -8,8 +9,8 @@ namespace SmartPharmacy.DAL.Models
         public int Id { get; set; }
         public DateTime OrderDate { get; set; }
         public DateTime? ShippedDate { get; set; }
-        public String OrderStatus { get; set; }
-        public String PaymentMethod { get; set; }
+        public OrderStatusEnum OrderStatus { get; set; }
+        public PaymentMethod PaymentMethod { get; set; }
         public String? StripeSessionId { get; set; }
         public String PhoneNumber { get; set; }
         public String City { get; set; }

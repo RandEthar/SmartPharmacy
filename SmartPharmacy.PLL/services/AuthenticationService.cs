@@ -115,9 +115,9 @@ namespace SmartPharmacy.PLL.services
                 var token =
                     await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-
+                //رمز مؤقت لتأكيد الإيميل
                 token = Uri.EscapeDataString(token);
-
+                //scheme =>https or http, host => localhost:port or domain
 
                 var confirmEmailUrl =
                 $"{_httpContextAccessor.HttpContext.Request.Scheme}://" +
@@ -160,7 +160,7 @@ namespace SmartPharmacy.PLL.services
 
         public async Task<string> GenerateAccessToken(ApplicationUser user)
         {
-
+            //لتوقيع الـ Token
             var securityKey =
                 new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"]!)
@@ -173,7 +173,7 @@ namespace SmartPharmacy.PLL.services
                     SecurityAlgorithms.HmacSha256
                 );
 
-
+            //معلومات منحطها داخل الـ Token
             var claims = new List<Claim>
             {
                 new Claim(
@@ -194,8 +194,8 @@ namespace SmartPharmacy.PLL.services
 
 
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
+                issuer: _config["Jwt:Issuer"], //مين انشاء هاد التوكن 
+                audience: _config["Jwt:Audience"],//مين مسموح له يستخدم هاد التوكن
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(60),
                 signingCredentials: credentials

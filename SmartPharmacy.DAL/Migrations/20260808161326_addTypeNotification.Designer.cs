@@ -12,8 +12,8 @@ using SmartPharmacy.DAL.Data;
 namespace SmartPharmacy.DAL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260731201901_createAuditLog")]
-    partial class createAuditLog
+    [Migration("20260808161326_addTypeNotification")]
+    partial class addTypeNotification
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -314,6 +314,10 @@ namespace SmartPharmacy.DAL.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Image")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("UpdatedById")
                         .HasColumnType("nvarchar(450)");
 
@@ -378,6 +382,9 @@ namespace SmartPharmacy.DAL.Migrations
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -567,6 +574,10 @@ namespace SmartPharmacy.DAL.Migrations
                     b.Property<DateOnly>("ExpiryDate")
                         .HasColumnType("date");
 
+                    b.Property<string>("Image")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("MinimumStock")
                         .HasColumnType("int");
 
@@ -597,6 +608,28 @@ namespace SmartPharmacy.DAL.Migrations
                     b.HasIndex("UpdatedById");
 
                     b.ToTable("Products", (string)null);
+                });
+
+            modelBuilder.Entity("SmartPharmacy.DAL.Models.ProductImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductImages");
                 });
 
             modelBuilder.Entity("SmartPharmacy.DAL.Models.ProductTranslation", b =>
@@ -858,6 +891,17 @@ namespace SmartPharmacy.DAL.Migrations
                     b.Navigation("UpdatedBy");
                 });
 
+            modelBuilder.Entity("SmartPharmacy.DAL.Models.ProductImage", b =>
+                {
+                    b.HasOne("SmartPharmacy.DAL.Models.Product", "Product")
+                        .WithMany("ProductImages")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("SmartPharmacy.DAL.Models.ProductTranslation", b =>
                 {
                     b.HasOne("SmartPharmacy.DAL.Models.Product", "Product")
@@ -904,6 +948,8 @@ namespace SmartPharmacy.DAL.Migrations
                     b.Navigation("NotificationProducts");
 
                     b.Navigation("OrderItems");
+
+                    b.Navigation("ProductImages");
 
                     b.Navigation("ProductTranslations");
                 });

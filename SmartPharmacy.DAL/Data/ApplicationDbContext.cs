@@ -18,7 +18,8 @@ namespace SmartPharmacy.DAL.Data
     {
 
         private readonly IHttpContextAccessor _contextAccessor;
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IHttpContextAccessor contextAccessor) : base(options)
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, 
+            IHttpContextAccessor contextAccessor) : base(options)
         {
             _contextAccessor = contextAccessor;
 
@@ -30,6 +31,7 @@ namespace SmartPharmacy.DAL.Data
         public DbSet<CategoryTranslation> CategoryTranslations { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductTranslation> ProductTranslations { get; set; }
+        public DbSet<ProductImage> ProductImages { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }

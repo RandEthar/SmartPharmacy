@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36717.8 d17.14
+VisualStudioVersion = 17.14.36717.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartPharmacy.PL", "SmartPharmacy\SmartPharmacy.PL.csproj", "{FC2675AD-5BD5-400F-B896-577473F8FB93}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartPharmacy.DAL", "SmartPharmacy.DAL\SmartPharmacy.DAL.csproj", "{F207A6F1-6048-433D-9893-47E37FBBED1B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartPharmacy.PLL", "SmartPharmacy.PLL\SmartPharmacy.PLL.csproj", "{F64F8075-4C2D-4F7A-802B-EF8CAF734E32}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartPharmacy.BLL", "SmartPharmacy.PLL\SmartPharmacy.BLL.csproj", "{F64F8075-4C2D-4F7A-802B-EF8CAF734E32}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

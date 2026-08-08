@@ -12,8 +12,8 @@ namespace SmartPharmacy.DAL.Data.Configurations
 
             builder.HasKey(o => o.Id);
 
-            builder.Property(o => o.OrderStatus).IsRequired().HasMaxLength(50);
-            builder.Property(o => o.PaymentMethod).IsRequired().HasMaxLength(50);
+            builder.Property(o => o.OrderStatus).HasConversion<string>().IsRequired().HasMaxLength(50);
+            builder.Property(o => o.PaymentMethod).HasConversion<string>().IsRequired().HasMaxLength(50);
 
             builder.HasOne(o => o.User)
                 .WithMany(u => u.Orders)

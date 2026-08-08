@@ -23,7 +23,8 @@ namespace SmartPharmacy.DAL.SeedData
                 "Admin",
                 "Pharmacist"
             };
-            if (!await   _roleManager.Roles.AnyAsync())
+            // Check if roles already exist in the database
+            if (!await _roleManager.Roles.AnyAsync())
             {
                 foreach (var item in roles)
                 {

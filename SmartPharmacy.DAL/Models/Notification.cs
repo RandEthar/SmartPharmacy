@@ -9,6 +9,7 @@ namespace SmartPharmacy.DAL.Models
         public String Message { get; set; }
         public bool IsRead { get; set; }
         public DateTime CreatedAt { get; set; }
+        public NotificationTypeEnum Type { get; set; }
 
         public String UserId { get; set; }
         public ApplicationUser User { get; set; }

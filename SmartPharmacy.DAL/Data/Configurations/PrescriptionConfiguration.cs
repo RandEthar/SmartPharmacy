@@ -13,7 +13,7 @@ namespace SmartPharmacy.DAL.Data.Configurations
             builder.HasKey(p => p.Id);
 
             builder.Property(p => p.ImageUrl).IsRequired();
-            builder.Property(p => p.Status).IsRequired().HasMaxLength(50);
+            builder.Property(p => p.Status).HasConversion<string>().IsRequired().HasMaxLength(50);
 
             builder.HasOne(p => p.Order)
                 .WithMany(o => o.Prescriptions)

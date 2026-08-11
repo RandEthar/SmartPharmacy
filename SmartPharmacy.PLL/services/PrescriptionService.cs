@@ -1,6 +1,7 @@
 using Mapster;
 using SmartPharmacy.DAL.DTO.Request;
 using SmartPharmacy.DAL.DTO.Response;
+using SmartPharmacy.DAL.Extentions;
 using SmartPharmacy.DAL.Models;
 using SmartPharmacy.DAL.Repository;
 using System;
@@ -14,15 +15,21 @@ namespace SmartPharmacy.PLL.services
     {
         private readonly IPrescriptionRepository _prescriptionRepository;
         private readonly IOrderRepository _orderRepository;
+        private readonly IProductRepository _productRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IFileService _fileService;
 
         public PrescriptionService(
             IPrescriptionRepository prescriptionRepository,
             IOrderRepository orderRepository,
+            IProductRepository productRepository,
+            IUnitOfWork unitOfWork,
             IFileService fileService)
         {
             _prescriptionRepository = prescriptionRepository;
             _orderRepository = orderRepository;
+            _productRepository = productRepository;
+            _unitOfWork = unitOfWork;
             _fileService = fileService;
         }
 
@@ -57,18 +64,34 @@ namespace SmartPharmacy.PLL.services
             return orderPrescriptions.Adapt<List<PrescriptionResponse>>();
         }
 
-        public async Task<List<PrescriptionResponse>> GetPrescriptions(PrescriptionStatusEnum status)
+        public async Task<PagenationResponse<PrescriptionResponse>> GetPrescriptions(
+            PrescriptionStatusEnum status, PagenationRequest request)
         {
-            var prescriptions = await _prescriptionRepository.GetAllAsync(p => p.Status == status);
+            var query = _prescriptionRepository
+                .GetQueryableAsync(p => p.Status == status)
+                .OrderByDescending(p => p.CreatedAt)
+                .ThenByDescending(p => p.Id);
 
-            return prescriptions.Adapt<List<PrescriptionResponse>>();
+            var prescriptions = await query.ApplyPagenation(request.Page, request.Limit);
+
+            return new PagenationResponse<PrescriptionResponse>
+            {
+                Data = prescriptions.Data.Adapt<List<PrescriptionResponse>>(),
+                TotalCount = prescriptions.TotalCount,
+                Page = prescriptions.Page,
+                Limit = prescriptions.Limit
+            };
         }
 
         public async Task<PrescriptionResponse?> ReviewPrescription(int prescriptionId, UpdatePrescriptionStatusRequest request)
         {
             var prescription = await _prescriptionRepository.GetOne(
                 p => p.Id == prescriptionId,
-                new[] { nameof(Prescription.Order) });
+                new[]
+                {
+                    nameof(Prescription.Order),
+                    $"{nameof(Prescription.Order)}.{nameof(Order.OrderItems)}"
+                });
 
             if (prescription == null) return null;
             if (prescription.Status != PrescriptionStatusEnum.Pending) return null;
@@ -80,8 +103,23 @@ namespace SmartPharmacy.PLL.services
 
             if (request.Status == PrescriptionStatusEnum.Rejected)
             {
+                // Cancelling the order has to hand the reserved stock back, otherwise a rejected
+                // prescription would quietly keep the medicine out of circulation.
+                await using var transaction = await _unitOfWork.BeginTransactionAsync();
+
+                var heldStock = prescription.Order.OrderStatus != OrderStatusEnum.Cancelled;
+
                 prescription.Order.OrderStatus = OrderStatusEnum.Cancelled;
                 await _orderRepository.UpdateAsync(prescription.Order);
+
+                // After the save, so the tracked order graph cannot write a stale quantity
+                // back over the restored stock.
+                if (heldStock)
+                {
+                    await _productRepository.RestoreStock(prescription.Order.OrderItems);
+                }
+
+                await transaction.CommitAsync();
             }
             else if (request.Status == PrescriptionStatusEnum.Approved)
             {

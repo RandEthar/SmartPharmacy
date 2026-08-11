@@ -75,6 +75,14 @@ namespace SmartPharmacy.PLL.Mapping
 
             TypeAdapterConfig<Notification, NotificationResponse>.NewConfig()
                .Map(dest => dest.Products, src => src.NotificationProducts);
+
+            TypeAdapterConfig<ApplicationUser, UserResponse>.NewConfig()
+               .Map(dest => dest.IsBlocked,
+                    src => src.LockoutEnd.HasValue && src.LockoutEnd > DateTimeOffset.UtcNow);
+
+            TypeAdapterConfig<ApplicationUser, UserDetailResponse>.NewConfig()
+               .Map(dest => dest.IsBlocked,
+                    src => src.LockoutEnd.HasValue && src.LockoutEnd > DateTimeOffset.UtcNow);
         }
 
         private static string BuildImageUrl(string image)

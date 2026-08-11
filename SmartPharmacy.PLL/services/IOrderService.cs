@@ -11,7 +11,7 @@ namespace SmartPharmacy.PLL.services
         Task<OrderResponse?> GetOrder(string userId, int orderId);
         Task<List<OrderResponse>> GetUserOrders(string userId);
         Task<bool> CancelOrder(string userId, int orderId);
-        Task<List<OrderResponse>> GetAllOrders(OrderStatusEnum status);
+        Task<PagenationResponse<OrderResponse>> GetAllOrders(OrderStatusEnum status, PagenationRequest request);
         Task<OrderResponse?> ChangeOrderState(int orderId, UpdateOrderStatusRequest request);
     }
 }

@@ -40,15 +40,15 @@ namespace SmartPharmacy.PL.Controllers
         }
 
         [HttpGet]
-        //[Authorize(Roles = "Pharmacist")]
-        public async Task<IActionResult> GetPrescriptions([FromQuery] PrescriptionStatusEnum status)
+        [Authorize(Roles = Roles.AdminOrPharmacist)]
+        public async Task<IActionResult> GetPrescriptions([FromQuery] PrescriptionStatusEnum status, [FromQuery] PagenationRequest request)
         {
-            var prescriptions = await _prescriptionService.GetPrescriptions(status);
+            var prescriptions = await _prescriptionService.GetPrescriptions(status, request);
             return Ok(prescriptions);
         }
 
         [HttpPatch("{id}/status")]
-        //[Authorize(Roles = "Pharmacist")]
+        [Authorize(Roles = Roles.AdminOrPharmacist)]
         public async Task<IActionResult> ReviewPrescription(int id, UpdatePrescriptionStatusRequest request)
         {
             var prescription = await _prescriptionService.ReviewPrescription(id, request);

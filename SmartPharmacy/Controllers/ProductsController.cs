@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SmartPharmacy.DAL.DTO.Request;
+using SmartPharmacy.DAL.Models;
 using SmartPharmacy.PLL.services;
 
 namespace SmartPharmacy.PL.Controllers
@@ -18,7 +19,7 @@ namespace SmartPharmacy.PL.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles = Roles.AdminOrPharmacist)]
         public async Task<IActionResult> CreateProduct([FromForm] ProductRequest productDto)
         {
 
@@ -44,10 +45,10 @@ namespace SmartPharmacy.PL.Controllers
 
         }
         [HttpGet()]
-        public async Task<IActionResult> GetAllProducts ()
+        public async Task<IActionResult> GetAllProducts ([FromQuery] ProductFilterRequest request)
         {
 
-            var productResponse = await _productService.GetAllProducts();
+            var productResponse = await _productService.GetAllProducts(request);
             if (productResponse == null)
             {
                 return NotFound();
@@ -56,7 +57,7 @@ namespace SmartPharmacy.PL.Controllers
 
         }
         [HttpPatch("{id}")]
-        [Authorize]
+        [Authorize(Roles = Roles.AdminOrPharmacist)]
         public async Task<IActionResult> UpdateProduct(int id, [FromForm] UpdateProductRequest productDto)
         {
 
@@ -70,7 +71,7 @@ namespace SmartPharmacy.PL.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(Roles = Roles.AdminOrPharmacist)]
         public async Task<IActionResult> DeleteProduct      (int id)
         {
 

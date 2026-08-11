@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartPharmacy.DAL.Models;
 using SmartPharmacy.PLL.services;
 
 namespace SmartPharmacy.PL.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Pharmacist,Admin")]
+    [Authorize(Roles = Roles.AdminOrPharmacist)]
     public class InventoryAlertsController : ControllerBase
     {
         private readonly IInventoryAlertService _inventoryAlertService;

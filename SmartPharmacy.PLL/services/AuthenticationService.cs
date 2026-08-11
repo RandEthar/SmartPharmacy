@@ -61,18 +61,36 @@ namespace SmartPharmacy.PLL.services
             }
 
 
+            // CheckPasswordAsync ignores lockout on its own, so a blocked user would keep
+            // logging in unless it is checked explicitly here.
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                return new LoginResponse
+                {
+                    Message = "This account is blocked. Please contact support.",
+                    Success = false
+                };
+            }
+
+
             var passwordValid =
                 await _userManager.CheckPasswordAsync(user, loginRequest.Password);
 
 
             if (!passwordValid)
             {
+                // Without this the configured 5-attempt lockout policy never actually triggers.
+                await _userManager.AccessFailedAsync(user);
+
                 return new LoginResponse
                 {
                     Message = "Invalid email or password.",
                     Success = false
                 };
             }
+
+
+            await _userManager.ResetAccessFailedCountAsync(user);
 
 
             if (!await _userManager.IsEmailConfirmedAsync(user))
@@ -109,7 +127,7 @@ namespace SmartPharmacy.PLL.services
             if (result.Succeeded)
             {
 
-                await _userManager.AddToRoleAsync(user, "Patient");
+                await _userManager.AddToRoleAsync(user, Roles.Patient);
 
 
                 var token =
@@ -191,6 +209,13 @@ namespace SmartPharmacy.PLL.services
                     user.UserName!
                 )
             };
+
+            //بدون هدول الـ claims أي [Authorize(Roles = ...)] رح ترفض كل المستخدمين
+            var roles = await _userManager.GetRolesAsync(user);
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
 
             var token = new JwtSecurityToken(
@@ -394,6 +419,12 @@ namespace SmartPharmacy.PLL.services
             if (user is null || user.RefreshTokenExpiration < DateTime.UtcNow)
             {
                 return new LoginResponse { Message = "Invalid or expired refresh token", Success = false };
+            }
+
+            // Otherwise a blocked user keeps minting fresh access tokens from an old cookie.
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                return new LoginResponse { Message = "This account is blocked. Please contact support.", Success = false };
             }
             var newRefreshToken = await GenerateRefreshTokenAsync(user);
             setRefreshTokenInCookie(newRefreshToken);

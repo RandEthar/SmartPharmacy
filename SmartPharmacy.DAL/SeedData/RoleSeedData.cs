@@ -1,9 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Microsoft.AspNetCore.Identity;
+using SmartPharmacy.DAL.Models;
 using System.Threading.Tasks;
 
 namespace SmartPharmacy.DAL.SeedData
@@ -17,22 +13,13 @@ namespace SmartPharmacy.DAL.SeedData
         }
         public async Task SeedData()
         {
-            string[] roles =
-             {
-                "Patient",
-                "Admin",
-                "Pharmacist"
-            };
-            // Check if roles already exist in the database
-            if (!await _roleManager.Roles.AnyAsync())
+            // Checked per role rather than "are there any roles at all", so a role added
+            // later still gets created on an existing database.
+            foreach (var role in Roles.All)
             {
-                foreach (var item in roles)
+                if (!await _roleManager.RoleExistsAsync(role))
                 {
-                    await _roleManager.CreateAsync(new IdentityRole
-                    {
-                        Name = item,
-                    });
-                    
+                    await _roleManager.CreateAsync(new IdentityRole { Name = role });
                 }
             }
         }

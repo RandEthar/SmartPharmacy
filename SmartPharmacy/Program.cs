@@ -1,6 +1,9 @@
 
+using Hangfire;
+using Hangfire.Dashboard;
 using SmartPharmacy.DAL.SeedData;
 using SmartPharmacy.PL.Extentions;
+using SmartPharmacy.PLL.Jobs;
 using SmartPharmacy.PLL.Mapping;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
@@ -23,6 +26,10 @@ namespace SmartPharmacy
             builder.Services.AddIdentityService();
             builder.Services.AddJWTAuthentication(builder.Configuration);
             builder.Services.AddHttpContextAccessor();
+
+            //HangfireExtentions
+            builder.Services.AddHangfireService(builder.Configuration);
+
             // Add services to the container.
 
             builder.Services.AddControllers()
@@ -53,6 +60,23 @@ namespace SmartPharmacy
 
 
             app.MapControllers();
+            //https://localhost:xxxx/hangfire
+            app.UseHangfireDashboard("/hangfire", new DashboardOptions
+            {
+                Authorization = new[] { new HangfireDashboardAuthorizationFilter(app.Environment) }
+            });
+
+            RecurringJob.AddOrUpdate<IInventoryAlertJob>(
+                "inventory-alert-check",
+                job => job.Run(),
+                Cron.Daily(8));
+
+            // Hourly, because every stale order is stock sitting unavailable to other customers.
+            RecurringJob.AddOrUpdate<IExpireStaleOrdersJob>(
+                "expire-stale-orders",
+                job => job.Run(),
+                Cron.Hourly());
+
             using (var scope = app.Services.CreateScope())
             {
                 var services = scope.ServiceProvider;

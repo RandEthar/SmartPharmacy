@@ -16,9 +16,9 @@ A backend API for an online pharmacy platform that connects **patients** 🧑‍
 - 📦 **Smart Inventory Management** — tracks stock quantities, minimum stock thresholds, and expiry dates.
 - 📄 **Prescription Management** — patients upload prescriptions for medicines that require one; pharmacists review and approve/reject before the order can be paid.
 - 🛒 **Online Ordering** — cart, checkout, order tracking, and order history.
-- 💳 **Payment Integration** — designed for online payment gateways (e.g. Stripe).
+- 💳 **Payment Integration** — Stripe Checkout, with the payment confirmed against Stripe itself (redirect + signed webhook), never on the caller's word.
 - 🔔 **Notifications** — in-app notifications for patients (order/prescription status) and pharmacists (low stock, expiring medicine).
-- ⏱️ **Background Jobs** *(planned)* — scheduled inventory/expiry checks and async notification delivery via Hangfire.
+- ⏱️ **Background Jobs** — Hangfire runs a daily inventory check (in-app alerts plus a single digest email per pharmacist) and an hourly sweep that cancels abandoned orders and releases their reserved stock.
 
 ## 🏗️ Architecture
 
@@ -68,6 +68,15 @@ SmartPharmacy.sln
    dotnet user-secrets set "Jwt:Audience" "SmartPharmacyUsers"
    dotnet user-secrets set "EmailSettings:Username" "<your-email>"
    dotnet user-secrets set "EmailSettings:Password" "<your-app-password>"
+   dotnet user-secrets set "StripeSettings:SecretKey" "<sk_test_...>"
+   dotnet user-secrets set "StripeSettings:WebhookSecret" "<whsec_...>"
+   ```
+
+   Every account registered through the API starts as a `Patient`, so the first `Admin` is
+   seeded from configuration on startup (skipped once an admin exists):
+   ```bash
+   dotnet user-secrets set "AdminUser:Email" "<admin-email>"
+   dotnet user-secrets set "AdminUser:Password" "<admin-password>"
    ```
 
 3. Apply EF Core migrations:
@@ -90,9 +99,11 @@ SmartPharmacy.sln
 
 ## 🗺️ Roadmap
 
-- [ ] ⏱️ Hangfire integration for recurring stock/expiry checks and background notification delivery
-- [ ] 💳 Stripe payment integration
+- [x] ⏱️ Hangfire integration for recurring stock/expiry checks and background notification delivery
+- [x] 💳 Stripe payment integration
+- [x] 🔒 Stock reserved on order creation inside a transaction, released when an order is cancelled or expires
 - [ ] 📊 Reports & dashboard endpoints
+- [ ] ✅ Request validation (FluentValidation) and a global exception handler
 
 ## 📄 License
 

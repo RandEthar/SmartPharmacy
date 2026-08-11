@@ -9,8 +9,6 @@ namespace SmartPharmacy.PLL.services
 {
     public class NotificationService : INotificationService
     {
-        private const string PharmacistRole = "Pharmacist";
-
         private static readonly string[] NotificationIncludes =
         {
             nameof(Notification.NotificationProducts),
@@ -35,7 +33,7 @@ namespace SmartPharmacy.PLL.services
             if (productIds is null || !productIds.Any())
                 return;
 
-            var pharmacists = await _userManager.GetUsersInRoleAsync(PharmacistRole);
+            var pharmacists = await _userManager.GetUsersInRoleAsync(Roles.Pharmacist);
             var message = BuildMessage(type, productIds.Count);
 
             foreach (var pharmacist in pharmacists)
@@ -56,7 +54,6 @@ namespace SmartPharmacy.PLL.services
                         IsRead = false,
                         CreatedAt = DateTime.UtcNow
                     };
-                    //??? ??????? ??? ?????? ????????? ???? ???? ???? ????????
 
                     AttachProducts(notification, productIds);
 

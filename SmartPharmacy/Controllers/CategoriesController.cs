@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SmartPharmacy.DAL.DTO.Request;
+using SmartPharmacy.DAL.Models;
 using SmartPharmacy.PLL.services;
 
 namespace SmartPharmacy.PL.Controllers
@@ -19,7 +20,7 @@ namespace SmartPharmacy.PL.Controllers
         }
 
           [HttpPost]
-        [Authorize]
+        [Authorize(Roles = Roles.AdminOrPharmacist)]
         public async Task<IActionResult> CreateCategory([FromForm] CategoryRequest categoryDto)
         {
           
@@ -57,7 +58,7 @@ namespace SmartPharmacy.PL.Controllers
 
         }
         [HttpPatch("{id}")]
-        [Authorize]
+        [Authorize(Roles = Roles.AdminOrPharmacist)]
         public async Task<IActionResult> UpdateCategory(int id, [FromForm] CategoryUpdateRequest categoryDto)
         {
 
@@ -71,7 +72,7 @@ namespace SmartPharmacy.PL.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(Roles = Roles.AdminOrPharmacist)]
         public async Task<IActionResult> DeleteCategory(int id)
         {
 

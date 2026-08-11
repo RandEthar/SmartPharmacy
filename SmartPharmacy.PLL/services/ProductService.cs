@@ -1,6 +1,7 @@
 ﻿using Mapster;
 using SmartPharmacy.DAL.DTO.Request;
 using SmartPharmacy.DAL.DTO.Response;
+using SmartPharmacy.DAL.Extentions;
 using SmartPharmacy.DAL.Models;
 using SmartPharmacy.DAL.Repository;
 using System;
@@ -71,14 +72,42 @@ namespace SmartPharmacy.PLL.services
             return true;
         }
 
-        public async Task<List<ProductResponse>> GetAllProducts()
+        public async Task<PagenationResponse<ProductResponse>> GetAllProducts(ProductFilterRequest request)
         {
-            var products = await _productRepository.GetAllAsync(null, new[]
+            var quere =  _productRepository.GetQueryableAsync(null, new[]
             {
                 nameof(Product.ProductImages),nameof(Product.ProductTranslations)
             });
-            return products.Adapt<List<ProductResponse>>();
+            if (request.Search!=null)
+            {
+                quere = quere.Where(p => p.ProductTranslations.Any(t => t.Name.Contains(request.Search)));
+            }
+            if (request.CategoryId.HasValue)
+            {
+                quere = quere.Where(p => p.CategoryId == request.CategoryId.Value);
+            }
+            if (request.MinPrice.HasValue)
+            {
+                quere = quere.Where(p => p.Price >= request.MinPrice.Value);
+            }
+            if (request.MaxPrice.HasValue)
+            {
+                quere = quere.Where(p => p.Price <= request.MaxPrice.Value);
+            }   
+            var product=await quere
+                .OrderByDescending(p => p.Id)
+                .ApplyPagenation(request.Page, request.Limit);
+
+           return new PagenationResponse<ProductResponse>
+            {
+                Data = product.Data.Adapt<List<ProductResponse>>(),
+                TotalCount = product.TotalCount,
+                Page = product.Page,
+                Limit = product.Limit
+            };
         }
+
+      
 
         public async Task<ProductResponse> GetProduct(Expression<Func<Product, bool>> filter)
         {

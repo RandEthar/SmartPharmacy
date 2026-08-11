@@ -15,7 +15,7 @@ namespace SmartPharmacy.PLL.services
         Task<ProductResponse> CreateProduct(ProductRequest request);
         Task<ProductResponse> UpdateProduct(int Id, UpdateProductRequest request);
         Task<bool> DeleteProduct(int Id);
-        Task<List<ProductResponse>> GetAllProducts();
+        Task<PagenationResponse<ProductResponse>> GetAllProducts(ProductFilterRequest request);
         Task<ProductResponse> GetProduct(Expression<Func<Product, bool>> filter);
     }
 }

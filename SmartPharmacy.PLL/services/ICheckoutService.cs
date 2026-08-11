@@ -9,5 +9,6 @@ namespace SmartPharmacy.PLL.services
         Task<CheckoutResponse> Checkout(string userId, CheckoutRequest request);
         Task<CheckoutResponse> PayOrder(string userId, int orderId);
         Task<CheckoutResponse> ConfirmPayment(string sessionId);
+        Task<CheckoutResponse> HandleStripeWebhook(string requestBody, string? stripeSignature);
     }
 }

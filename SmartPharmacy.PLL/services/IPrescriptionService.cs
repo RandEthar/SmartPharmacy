@@ -10,7 +10,7 @@ namespace SmartPharmacy.PLL.services
     {
         Task<PrescriptionResponse?> UploadPrescription(string userId, PrescriptionRequest request);
         Task<List<PrescriptionResponse>> GetOrderPrescriptions(string userId, int orderId);
-        Task<List<PrescriptionResponse>> GetPrescriptions(PrescriptionStatusEnum status);
+        Task<PagenationResponse<PrescriptionResponse>> GetPrescriptions(PrescriptionStatusEnum status, PagenationRequest request);
         Task<PrescriptionResponse?> ReviewPrescription(int prescriptionId, UpdatePrescriptionStatusRequest request);
     }
 }

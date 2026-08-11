@@ -1,6 +1,8 @@
 using Mapster;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using SmartPharmacy.DAL.DTO.Request;
 using SmartPharmacy.DAL.DTO.Response;
 using SmartPharmacy.DAL.Models;
@@ -22,6 +24,10 @@ namespace SmartPharmacy.PLL.services
         private readonly IOrderRepository _orderRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IEmailSender _emailSender;
+        private readonly INotificationService _notificationService;
+        private readonly IConfiguration _configuration;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<CheckoutService> _logger;
 
         public CheckoutService(
 
@@ -31,8 +37,14 @@ namespace SmartPharmacy.PLL.services
             UserManager<ApplicationUser> userManager,
         IFileService fileService,
         IHttpContextAccessor httpContextAccessor,
-        IEmailSender emailSender)
+        IEmailSender emailSender,
+        INotificationService notificationService,
+        IConfiguration configuration,
+        IUnitOfWork unitOfWork,
+        ILogger<CheckoutService> logger)
         {
+            _unitOfWork = unitOfWork;
+            _logger = logger;
 
             _userManager = userManager;
             _cartService = cartService;
@@ -41,6 +53,8 @@ namespace SmartPharmacy.PLL.services
             _httpContextAccessor = httpContextAccessor;
             _orderRepository = orderRepository;
             _emailSender = emailSender;
+            _notificationService = notificationService;
+            _configuration = configuration;
         }
 
         public async Task<CheckoutResponse> Checkout(string userId, CheckoutRequest request)
@@ -96,7 +110,19 @@ namespace SmartPharmacy.PLL.services
                 var product = await _productRepository.GetOne(p=>p.Id== item.ProductId,
                     new string[] { nameof(Product.ProductTranslations) }
                     );
+
+                if (product == null)
+                {
+                    return new CheckoutResponse
+                    {
+                        Success = false,
+                        ErrorMessage = $"Product #{item.ProductId} is no longer available."
+                    };
+                }
+
                 var productResponse = product.Adapt<ProductResponse>();
+                // Early check purely so the customer gets the offending product name. The
+                // binding check is the reservation below - this value can be stale by then.
                 if (item.Quantity>product.StockQuantity)
                 {
                     return new CheckoutResponse
@@ -129,7 +155,24 @@ namespace SmartPharmacy.PLL.services
                 }).ToList()
             };
 
-            await _orderRepository.CreateAsync(order);
+            // Stock is taken here, when the order is created, rather than after payment. That
+            // closes the window where a customer could sit on the Stripe page (or wait days for
+            // a prescription review) while the last box was sold to somebody else.
+            await using (var transaction = await _unitOfWork.BeginTransactionAsync())
+            {
+                if (!await _productRepository.TryReserveStock(order.OrderItems))
+                {
+                    await transaction.RollbackAsync();
+                    return new CheckoutResponse
+                    {
+                        Success = false,
+                        ErrorMessage = "One of the products in your cart just went out of stock. Please review your cart."
+                    };
+                }
+
+                await _orderRepository.CreateAsync(order);
+                await transaction.CommitAsync();
+            }
 
             if (requiresPrescription)
             {
@@ -235,11 +278,77 @@ namespace SmartPharmacy.PLL.services
 
         public async Task<CheckoutResponse> ConfirmPayment(string sessionId)
         {
+            if (string.IsNullOrWhiteSpace(sessionId))
+            {
+                return new CheckoutResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Session id is required."
+                };
+            }
+
             var order = await _orderRepository.GetOne(o => o.StripeSessionId == sessionId,
                 new string[] { nameof(Order.OrderItems),
                     $"{nameof(Order.OrderItems)}.{nameof(OrderItem.Product)}"
                  , $"{nameof(Order.OrderItems)}.{nameof(OrderItem.Product)}.{nameof(Product.ProductTranslations)}" }
                 );
+
+            if (order == null)
+            {
+                return new CheckoutResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Order not found."
+                };
+            }
+
+            // Idempotency guard: this endpoint is hit by a browser redirect *and* by the Stripe
+            // webhook, and the user can refresh it. Finalizing twice would decrement stock twice.
+            if (order.OrderStatus == OrderStatusEnum.Paid)
+            {
+                return new CheckoutResponse
+                {
+                    Success = true,
+                    OrderId = order.Id
+                };
+            }
+
+            if (order.OrderStatus != OrderStatusEnum.Pending)
+            {
+                return new CheckoutResponse
+                {
+                    Success = false,
+                    OrderId = order.Id,
+                    ErrorMessage = "Order is not awaiting payment."
+                };
+            }
+
+            // Stripe is the only party that knows whether money actually moved. Trusting the
+            // redirect alone let anyone mark their own order as paid just by calling the URL.
+            Stripe.Checkout.Session session;
+            try
+            {
+                session = await new Stripe.Checkout.SessionService().GetAsync(sessionId);
+            }
+            catch (Stripe.StripeException)
+            {
+                return new CheckoutResponse
+                {
+                    Success = false,
+                    OrderId = order.Id,
+                    ErrorMessage = "Could not verify the payment with Stripe."
+                };
+            }
+
+            if (session == null || session.PaymentStatus != "paid")
+            {
+                return new CheckoutResponse
+                {
+                    Success = false,
+                    OrderId = order.Id,
+                    ErrorMessage = "Payment has not been completed."
+                };
+            }
 
             await FinalizeOrder(order);
 
@@ -250,24 +359,78 @@ namespace SmartPharmacy.PLL.services
             };
         }
 
+        public async Task<CheckoutResponse> HandleStripeWebhook(string requestBody, string? stripeSignature)
+        {
+            var webhookSecret = _configuration["StripeSettings:WebhookSecret"];
+
+            if (string.IsNullOrWhiteSpace(webhookSecret))
+            {
+                return new CheckoutResponse
+                {
+                    Success = false,
+                    ErrorMessage = "StripeSettings:WebhookSecret is not configured."
+                };
+            }
+
+            Stripe.Event stripeEvent;
+            try
+            {
+                // Verifies the payload was signed by Stripe; without it anyone could POST here.
+                stripeEvent = Stripe.EventUtility.ConstructEvent(requestBody, stripeSignature, webhookSecret);
+            }
+            catch (Stripe.StripeException)
+            {
+                return new CheckoutResponse
+                {
+                    Success = false,
+                    ErrorMessage = "Invalid Stripe signature."
+                };
+            }
+
+            if (stripeEvent.Type != "checkout.session.completed")
+            {
+                // Acknowledged so Stripe stops retrying events this app does not act on.
+                return new CheckoutResponse { Success = true };
+            }
+
+            if (stripeEvent.Data.Object is not Stripe.Checkout.Session session)
+            {
+                return new CheckoutResponse { Success = true };
+            }
+
+            return await ConfirmPayment(session.Id);
+        }
+
         private async Task FinalizeOrder(Order order)
         {
+            // Stock was already taken when the order was created, so paying only flips the status.
             order.OrderStatus = OrderStatusEnum.Paid;
             await _orderRepository.UpdateAsync(order);
             await _cartService.ClearCart(order.UserId);
 
-            var user = await _userManager.FindByIdAsync(order.UserId);
-            await _emailSender.SendEmailAsync(user.Email, "Order Confirmation",
-                $"Your order #{order.Id} has been successfully placed and paid.");
+            var lowStockProducts = await _productRepository.GetProductsBelowMinimumStock(
+                order.OrderItems.Select(oi => oi.ProductId));
 
-            var products = await _productRepository.DecreaseQuantity(order.OrderItems.ToList());
-
-            foreach (var item in products)
+            // Low stock is the pharmacy's problem, not the customer's - this used to email the
+            // customer a restocking notice for every product their own order pushed under the limit.
+            if (lowStockProducts.Any())
             {
-                var productResponse = item.Adapt<ProductResponse>();
+                await _notificationService.NotifyPharmacists(
+                    NotificationTypeEnum.LowStock,
+                    lowStockProducts.Select(p => p.Id).ToList());
+            }
 
-                await _emailSender.SendEmailAsync(user.Email, "Low Stock Alert",
-                        $"The product {productResponse.Name} is low in stock. Please restock soon.");
+            // Best effort: the confirmation mail used to sit in the middle of this method, so a
+            // failing SMTP server threw and left the order paid with the stock never adjusted.
+            try
+            {
+                var user = await _userManager.FindByIdAsync(order.UserId);
+                await _emailSender.SendEmailAsync(user.Email, "Order Confirmation",
+                    $"Your order #{order.Id} has been successfully placed and paid.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Could not send the confirmation email for order {OrderId}.", order.Id);
             }
         }
     }

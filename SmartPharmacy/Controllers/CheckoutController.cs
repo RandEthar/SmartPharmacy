@@ -43,6 +43,8 @@ namespace SmartPharmacy.PL.Controllers
             return Ok(response);
         }
 
+        // Anonymous because Stripe redirects the browser here without the bearer token.
+        // Safe now only because ConfirmPayment verifies the payment against Stripe itself.
         [AllowAnonymous]
         [HttpGet("success")]
         public async Task<IActionResult> Success(string sessionId)
@@ -53,6 +55,27 @@ namespace SmartPharmacy.PL.Controllers
                 return BadRequest(response.ErrorMessage);
             }
             return Ok(response);
+        }
+
+        // Stripe calls this server-to-server, so the order is still confirmed even if the
+        // customer closes the tab before the success redirect fires. Authenticated by the
+        // Stripe-Signature header rather than by a JWT.
+        [AllowAnonymous]
+        [HttpPost("webhook")]
+        public async Task<IActionResult> StripeWebhook()
+        {
+            using var reader = new StreamReader(HttpContext.Request.Body);
+            var requestBody = await reader.ReadToEndAsync();
+
+            var response = await _checkoutService.HandleStripeWebhook(
+                requestBody,
+                Request.Headers["Stripe-Signature"]);
+
+            if (!response.Success)
+            {
+                return BadRequest(response.ErrorMessage);
+            }
+            return Ok();
         }
 
         [AllowAnonymous]

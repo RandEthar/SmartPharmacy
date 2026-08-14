@@ -56,10 +56,9 @@ namespace SmartPharmacy.PLL.services
             {
                 return null;
             }
-            if (newQuantity > product.StockQuantity)
-            {
-                throw new InvalidOperationException("Cannot add more items than available in stock.");
-            }
+
+            EnsureSellable(product);
+            EnsureQuantityIsAvailable(product, request.Quantity, newQuantity);
 
             if (existingItem != null)
             {
@@ -104,10 +103,9 @@ namespace SmartPharmacy.PLL.services
             {
                 return null;
             }
-            if (newQuantity > product.StockQuantity)
-            {
-                throw new InvalidOperationException("Cannot add more items than available in stock.");
-            }
+
+            EnsureSellable(product);
+            EnsureQuantityIsAvailable(product, request.Quantity, newQuantity);
 
             existingItem.Quantity = newQuantity;
             await _cartRepository.UpdateAsync(existingItem);
@@ -145,6 +143,51 @@ namespace SmartPharmacy.PLL.services
 
            await _cartRepository.DeleteRangAsync(cartUserItems);
             return true;
+        }
+
+
+        /// <summary>
+        /// Refuses products a pharmacy has no business selling, regardless of how many are asked
+        /// for. Checked here so the customer finds out at the cart rather than at checkout.
+        /// </summary>
+        private static void EnsureSellable(Product product)
+        {
+            var name = product.Adapt<ProductResponse>().Name;
+
+            if (product.entitystate != Entitystate.Active)
+            {
+                throw new InvalidOperationException($"{name} is no longer available.");
+            }
+
+            if (product.IsExpired)
+            {
+                throw new InvalidOperationException(
+                    $"{name} expired on {product.ExpiryDate:yyyy-MM-dd} and cannot be sold.");
+            }
+        }
+
+
+        private static void EnsureQuantityIsAvailable(Product product, int requestedChange, int newQuantity)
+        {
+            // Without this a quantity of 0 stores a pointless line, and a negative one slips past
+            // the stock check below and can drive the cart quantity under zero.
+            if (requestedChange <= 0)
+            {
+                throw new InvalidOperationException("Quantity must be greater than zero.");
+            }
+
+            var name = product.Adapt<ProductResponse>().Name;
+
+            if (product.StockQuantity <= 0)
+            {
+                throw new InvalidOperationException($"{name} is out of stock.");
+            }
+
+            if (newQuantity > product.StockQuantity)
+            {
+                throw new InvalidOperationException(
+                    $"Only {product.StockQuantity} unit(s) of {name} are left in stock.");
+            }
         }
     }
 }

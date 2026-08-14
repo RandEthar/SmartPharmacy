@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SmartPharmacy.DAL.Models;
 using SmartPharmacy.DAL.Repository;
+using SmartPharmacy.PLL.services;
 
 namespace SmartPharmacy.PLL.Jobs
 {
@@ -16,6 +17,7 @@ namespace SmartPharmacy.PLL.Jobs
 
         private readonly IOrderRepository _orderRepository;
         private readonly IProductRepository _productRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<ExpireStaleOrdersJob> _logger;
         private readonly int _unpaidExpiryHours;
@@ -24,21 +26,29 @@ namespace SmartPharmacy.PLL.Jobs
         public ExpireStaleOrdersJob(
             IOrderRepository orderRepository,
             IProductRepository productRepository,
+            INotificationService notificationService,
             IUnitOfWork unitOfWork,
             IConfiguration configuration,
             ILogger<ExpireStaleOrdersJob> logger)
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
+            _notificationService = notificationService;
             _unitOfWork = unitOfWork;
             _logger = logger;
 
+            //"Orders": {
+            //    "UnpaidExpiryHours": 24,
+            //    "PrescriptionExpiryHours": 72
+            //     },
+
+            //??? ?????? ?? ???? ???? 24 ????? ??? ????? ????? ????????
             _unpaidExpiryHours =
                 int.TryParse(configuration["Orders:UnpaidExpiryHours"], out var unpaid)
                     ? unpaid
                     : DefaultUnpaidExpiryHours;
 
-            // Longer, because this one is waiting on a pharmacist rather than on the customer.
+            // ??? ?????? ?? ???? ?????? ???? 72 ????? ??? ????? ????? ????????
             _prescriptionExpiryHours =
                 int.TryParse(configuration["Orders:PrescriptionExpiryHours"], out var prescription)
                     ? prescription
@@ -48,7 +58,7 @@ namespace SmartPharmacy.PLL.Jobs
         public async Task Run()
         {
             var now = DateTime.UtcNow;
-
+            //???????? ???? ????? ???? ?? ???? ?????.
             await ExpireOrders(OrderStatusEnum.Pending, now.AddHours(-_unpaidExpiryHours));
             await ExpireOrders(OrderStatusEnum.AwaitingPrescription, now.AddHours(-_prescriptionExpiryHours));
         }
@@ -75,6 +85,11 @@ namespace SmartPharmacy.PLL.Jobs
                     await _productRepository.RestoreStock(order.OrderItems);
 
                     await transaction.CommitAsync();
+
+                    // The patient did not ask for this, so of all the cancellation paths this is
+                    // the one they most need to be told about.
+                    await _notificationService.NotifyUser(
+                        order.UserId, NotificationTypeEnum.OrderCancelled, order.Id);
 
                     _logger.LogInformation(
                         "Cancelled stale order {OrderId} ({Status}) and released its reserved stock.",

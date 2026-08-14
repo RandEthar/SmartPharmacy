@@ -13,6 +13,7 @@ namespace SmartPharmacy.PLL.services
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IProductRepository _productRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
 
         private static readonly string[] _orderIncludes = new[]
@@ -27,13 +28,25 @@ namespace SmartPharmacy.PLL.services
         private static bool HoldsStock(OrderStatusEnum status) =>
             status != OrderStatusEnum.Cancelled && status != OrderStatusEnum.Delivered;
 
+        // Only the transitions the patient actually cares about. Paid is deliberately absent:
+        // the checkout flow already raises it the moment the payment clears.
+        private static NotificationTypeEnum? MapStatusToNotification(OrderStatusEnum status) => status switch
+        {
+            OrderStatusEnum.Shipped => NotificationTypeEnum.OrderShipped,
+            OrderStatusEnum.Delivered => NotificationTypeEnum.OrderDelivered,
+            OrderStatusEnum.Cancelled => NotificationTypeEnum.OrderCancelled,
+            _ => null
+        };
+
         public OrderService(
             IOrderRepository orderRepository,
             IProductRepository productRepository,
+            INotificationService notificationService,
             IUnitOfWork unitOfWork)
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
+            _notificationService = notificationService;
             _unitOfWork = unitOfWork;
         }
 
@@ -131,6 +144,18 @@ namespace SmartPharmacy.PLL.services
             }
 
             await transaction.CommitAsync();
+
+            // After the commit: telling the patient is a side effect, and a failure here must
+            // not roll back a status change the pharmacy already made.
+            if (updated)
+            {
+                var patientNotification = MapStatusToNotification(request.OrderStatus);
+                if (patientNotification.HasValue)
+                {
+                    await _notificationService.NotifyUser(
+                        order.UserId, patientNotification.Value, order.Id);
+                }
+            }
 
             return updated ? order.Adapt<OrderResponse>() : null;
         }

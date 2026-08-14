@@ -16,6 +16,7 @@ namespace SmartPharmacy.PLL.services
         private readonly IPrescriptionRepository _prescriptionRepository;
         private readonly IOrderRepository _orderRepository;
         private readonly IProductRepository _productRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFileService _fileService;
 
@@ -23,12 +24,14 @@ namespace SmartPharmacy.PLL.services
             IPrescriptionRepository prescriptionRepository,
             IOrderRepository orderRepository,
             IProductRepository productRepository,
+            INotificationService notificationService,
             IUnitOfWork unitOfWork,
             IFileService fileService)
         {
             _prescriptionRepository = prescriptionRepository;
             _orderRepository = orderRepository;
             _productRepository = productRepository;
+            _notificationService = notificationService;
             _unitOfWork = unitOfWork;
             _fileService = fileService;
         }
@@ -120,16 +123,29 @@ namespace SmartPharmacy.PLL.services
                 }
 
                 await transaction.CommitAsync();
+
+                // After the commit: the patient needs to know their order is off the table.
+                await _notificationService.NotifyUser(
+                    prescription.Order.UserId,
+                    NotificationTypeEnum.PrescriptionRejected,
+                    prescription.OrderId);
             }
             else if (request.Status == PrescriptionStatusEnum.Approved)
             {
                 var orderPrescriptions = await _prescriptionRepository.GetAllAsync(p => p.OrderId == prescription.OrderId);
                 var allApproved = orderPrescriptions.All(p => p.Status == PrescriptionStatusEnum.Approved);
 
+                // Only once every prescription on the order is cleared - a partial approval does
+                // not let the patient pay yet, so telling them it does would be misleading.
                 if (allApproved)
                 {
                     prescription.Order.OrderStatus = OrderStatusEnum.Pending;
                     await _orderRepository.UpdateAsync(prescription.Order);
+
+                    await _notificationService.NotifyUser(
+                        prescription.Order.UserId,
+                        NotificationTypeEnum.PrescriptionApproved,
+                        prescription.OrderId);
                 }
             }
 

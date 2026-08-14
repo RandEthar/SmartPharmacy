@@ -121,6 +121,27 @@ namespace SmartPharmacy.PLL.services
                 }
 
                 var productResponse = product.Adapt<ProductResponse>();
+
+                // Re-checked here and not only in the cart: an item can sit in the cart for days
+                // and expire, or be deactivated by a pharmacist, before the customer comes back.
+                if (product.entitystate != Entitystate.Active)
+                {
+                    return new CheckoutResponse
+                    {
+                        Success = false,
+                        ErrorMessage = $"{productResponse.Name} is no longer available. Please remove it from your cart."
+                    };
+                }
+
+                if (product.IsExpired)
+                {
+                    return new CheckoutResponse
+                    {
+                        Success = false,
+                        ErrorMessage = $"{productResponse.Name} has expired and cannot be sold. Please remove it from your cart."
+                    };
+                }
+
                 // Early check purely so the customer gets the offending product name. The
                 // binding check is the reservation below - this value can be stale by then.
                 if (item.Quantity>product.StockQuantity)
@@ -407,6 +428,9 @@ namespace SmartPharmacy.PLL.services
             order.OrderStatus = OrderStatusEnum.Paid;
             await _orderRepository.UpdateAsync(order);
             await _cartService.ClearCart(order.UserId);
+
+            await _notificationService.NotifyUser(
+                order.UserId, NotificationTypeEnum.OrderPaid, order.Id);
 
             var lowStockProducts = await _productRepository.GetProductsBelowMinimumStock(
                 order.OrderItems.Select(oi => oi.ProductId));

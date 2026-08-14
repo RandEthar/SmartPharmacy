@@ -27,40 +27,28 @@ namespace SmartPharmacy.PL.Controllers
             return Ok(cartResponse);
         }
 
+        // No try/catch here any more: GlobalExceptionHandler turns the InvalidOperationException
+        // the cart raises for an expired or out-of-stock item into a 400 ProblemDetails.
         [HttpPost]
         public async Task<IActionResult> AddToCart(CartItemRequest request)
         {
-            try
+            var cartItemResponse = await _cartService.AddToCart(UserId, request);
+            if (cartItemResponse == null)
             {
-                var cartItemResponse = await _cartService.AddToCart(UserId, request);
-                if (cartItemResponse == null)
-                {
-                    return Problem(detail: $"Product with id {request.ProductId} was not found.", statusCode: StatusCodes.Status404NotFound);
-                }
-                return Ok(cartItemResponse);
+                return Problem(detail: $"Product with id {request.ProductId} was not found.", statusCode: StatusCodes.Status404NotFound);
             }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return Ok(cartItemResponse);
         }
 
         [HttpPatch("{productId}")]
         public async Task<IActionResult> UpdateCartItem(int productId, UpdateCartItemRequest request)
         {
-            try
+            var cartItemResponse = await _cartService.UpdateQuantity(UserId, productId, request);
+            if (cartItemResponse == null)
             {
-                var cartItemResponse = await _cartService.UpdateQuantity(UserId, productId, request);
-                if (cartItemResponse == null)
-                {
-                    return Problem(detail: $"Cart item with product id {productId} was not found.", statusCode: StatusCodes.Status404NotFound);
-                }
-                return Ok(cartItemResponse);
+                return Problem(detail: $"Cart item with product id {productId} was not found.", statusCode: StatusCodes.Status404NotFound);
             }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return Ok(cartItemResponse);
         }
 
         [HttpDelete("{productId}")]

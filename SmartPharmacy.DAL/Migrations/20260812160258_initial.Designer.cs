@@ -12,8 +12,8 @@ using SmartPharmacy.DAL.Data;
 namespace SmartPharmacy.DAL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260808161326_addTypeNotification")]
-    partial class addTypeNotification
+    [Migration("20260812160258_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

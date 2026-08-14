@@ -101,6 +101,10 @@ namespace SmartPharmacy.PLL.services
                     Success = false
                 };
             }
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                return new LoginResponse { Message = "account is Blocked", Success = false };
+            }
             var refreshToken=await  GenerateRefreshTokenAsync(user);
             setRefreshTokenInCookie(refreshToken);
      

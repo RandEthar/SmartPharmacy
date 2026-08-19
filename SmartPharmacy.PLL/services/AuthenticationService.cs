@@ -20,6 +20,9 @@ namespace SmartPharmacy.PLL.services
         private readonly IEmailSender _emailSender;
         private readonly IConfiguration _config;
 
+        // Shared by the stored token and its cookie so the two cannot drift apart.
+        private const int RefreshTokenLifetimeDays = 15;
+
 
         public AuthenticationService(
             IEmailSender emailSender,
@@ -392,7 +395,7 @@ namespace SmartPharmacy.PLL.services
         {
             string refreshToken = Guid.NewGuid().ToString();
             user.RefreshToken = refreshToken;
-            user.RefreshTokenExpiration = DateTime.UtcNow.AddDays(15);
+            user.RefreshTokenExpiration = DateTime.UtcNow.AddDays(RefreshTokenLifetimeDays);
             await _userManager.UpdateAsync(user);
             return refreshToken;
         }
@@ -401,11 +404,19 @@ namespace SmartPharmacy.PLL.services
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Secure = false,//true in production
-                SameSite = SameSiteMode.None,//strict in production,
-                Expires = DateTime.UtcNow.AddDays(15)
 
+                // SameSite=None is only valid alongside Secure. With Secure=false the client
+                // discards the cookie without any error, so /refresh-token could never see it
+                // and always answered "No refresh token provided". The API runs over HTTPS,
+                // so requiring Secure costs nothing.
+                Secure = true,
+                SameSite = SameSiteMode.None,
 
+                // Without an explicit path the cookie is scoped to the path that set it,
+                // so /api/Authentications/refresh-token would not receive it.
+                Path = "/",
+
+                Expires = DateTime.UtcNow.AddDays(RefreshTokenLifetimeDays)
             };
             _httpContextAccessor.HttpContext.Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
         }

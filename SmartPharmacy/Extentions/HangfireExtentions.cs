@@ -10,7 +10,7 @@ namespace SmartPharmacy.PL.Extentions
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
+                .UseSqlServerStorage(configuration.GetRequiredConnectionString("DefaultConnection")));
 
             services.AddHangfireServer();
 

@@ -12,3 +12,12 @@ obj/
 ## OS
 Thumbs.db
 .DS_Store
+
+## Host-only configuration: real connection strings and keys live here, never in git
+appsettings.Production.json
+
+## Publish profiles: tied to one hosting account, and the .user file holds its password
+SmartPharmacy/Properties/PublishProfiles/
+
+## Runtime uploads: FileService creates this folder on demand
+SmartPharmacy/wwwroot/Images/

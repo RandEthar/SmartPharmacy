@@ -3,6 +3,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Hangfire;
 using Hangfire.Dashboard;
+using Scalar.AspNetCore;
 using SmartPharmacy.DAL.SeedData;
 using SmartPharmacy.PL.Extentions;
 using SmartPharmacy.PL.Middlewares;
@@ -53,7 +54,10 @@ namespace SmartPharmacy
                     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
                 });
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();
+            builder.Services.AddOpenApi(options =>
+            {
+                options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+            });
 
             var app = builder.Build();
 
@@ -61,10 +65,19 @@ namespace SmartPharmacy
             Stripe.StripeConfiguration.ApiKey = app.Configuration["StripeSettings:SecretKey"];
 
             // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+
+            // Served in every environment on purpose: the deployed URL is the only way anyone
+            // reviewing this project - or the Flutter client - can discover the API surface.
+            app.MapOpenApi();
+            app.MapScalarApiReference(options =>
             {
-                app.MapOpenApi();
-            }
+                options.WithTitle("SmartPharmacy API")
+                       .WithTheme(ScalarTheme.Purple);
+            });
+
+            // Without this the deployed root URL returns 404, which reads as a broken deployment.
+            app.MapGet("/", () => Results.Redirect("/scalar/v1")).ExcludeFromDescription();
+
             // First in the pipeline so it can catch exceptions thrown by everything after it.
             app.UseExceptionHandler();
 
@@ -88,8 +101,6 @@ namespace SmartPharmacy
                 Authorization = new[] { new HangfireDashboardAuthorizationFilter(app.Environment) }
             });
 
-            // Hangfire evaluates cron expressions in UTC unless told otherwise, which would fire
-            // the "8 AM" report at 11:00 local time in Jordan - well after the shift starts.
             var schedulingOptions = new RecurringJobOptions
             {
                 TimeZone = ResolveSchedulingTimeZone(app)

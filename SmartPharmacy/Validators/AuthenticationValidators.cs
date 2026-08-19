@@ -35,8 +35,8 @@ namespace SmartPharmacy.PL.Validators
 
             RuleFor(x => x.PhoneNumber)
                 .NotEmpty().WithMessage("Phone number is required.")
-                .Matches(@"^07[7-9]\d{7}$")
-                .WithMessage("Phone number must be a valid Jordanian mobile number, e.g. 0791234567.");
+                .Matches(ValidationPatterns.PalestinianMobile)
+                .WithMessage(ValidationPatterns.PalestinianMobileMessage);
         }
     }
 

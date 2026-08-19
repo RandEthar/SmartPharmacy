@@ -47,8 +47,7 @@ namespace SmartPharmacy.PLL.Jobs
                 NotificationTypeEnum.Expired,
                 expired.Select(p => p.ProductId).ToList());
 
-            // The in-app notification is the record; the email is what reaches a pharmacist who
-            // has not opened the system today. One digest per run - never one mail per product.
+
             await SendDigestEmail(lowStock, nearExpiry, expired);
         }
 

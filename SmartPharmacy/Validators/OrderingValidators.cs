@@ -39,8 +39,8 @@ namespace SmartPharmacy.PL.Validators
             // All three are optional here: the service falls back to the address saved on the
             // user profile. They are only checked for shape when the caller does send them.
             RuleFor(x => x.PhoneNumber)
-                .Matches(@"^07[7-9]\d{7}$")
-                .WithMessage("Phone number must be a valid Jordanian mobile number, e.g. 0791234567.")
+                .Matches(ValidationPatterns.PalestinianMobile)
+                .WithMessage(ValidationPatterns.PalestinianMobileMessage)
                 .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber));
 
             RuleFor(x => x.City)

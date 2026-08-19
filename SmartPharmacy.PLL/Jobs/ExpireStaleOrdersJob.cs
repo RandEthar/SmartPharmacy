@@ -42,13 +42,13 @@ namespace SmartPharmacy.PLL.Jobs
             //    "PrescriptionExpiryHours": 72
             //     },
 
-            //??? ?????? ?? ???? ???? 24 ????? ??? ????? ????? ????????
+    
             _unpaidExpiryHours =
                 int.TryParse(configuration["Orders:UnpaidExpiryHours"], out var unpaid)
                     ? unpaid
                     : DefaultUnpaidExpiryHours;
 
-            // ??? ?????? ?? ???? ?????? ???? 72 ????? ??? ????? ????? ????????
+         
             _prescriptionExpiryHours =
                 int.TryParse(configuration["Orders:PrescriptionExpiryHours"], out var prescription)
                     ? prescription
@@ -58,7 +58,7 @@ namespace SmartPharmacy.PLL.Jobs
         public async Task Run()
         {
             var now = DateTime.UtcNow;
-            //???????? ???? ????? ???? ?? ???? ?????.
+         
             await ExpireOrders(OrderStatusEnum.Pending, now.AddHours(-_unpaidExpiryHours));
             await ExpireOrders(OrderStatusEnum.AwaitingPrescription, now.AddHours(-_prescriptionExpiryHours));
         }
@@ -71,8 +71,7 @@ namespace SmartPharmacy.PLL.Jobs
 
             foreach (var order in staleOrders)
             {
-                // One transaction per order: a single failure must not undo the releases that
-                // already succeeded, nor stop the remaining orders from being processed.
+               
                 try
                 {
                     await using var transaction = await _unitOfWork.BeginTransactionAsync();
@@ -80,8 +79,7 @@ namespace SmartPharmacy.PLL.Jobs
                     order.OrderStatus = OrderStatusEnum.Cancelled;
                     await _orderRepository.UpdateAsync(order);
 
-                    // After the save, so the tracked order graph cannot write a stale quantity
-                    // back over the restored stock.
+                 
                     await _productRepository.RestoreStock(order.OrderItems);
 
                     await transaction.CommitAsync();

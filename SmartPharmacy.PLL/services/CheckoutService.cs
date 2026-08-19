@@ -142,8 +142,6 @@ namespace SmartPharmacy.PLL.services
                     };
                 }
 
-                // Early check purely so the customer gets the offending product name. The
-                // binding check is the reservation below - this value can be stale by then.
                 if (item.Quantity>product.StockQuantity)
                 {
                     return new CheckoutResponse

@@ -9,7 +9,7 @@ namespace SmartPharmacy.PL.Extentions
             services.AddDbContext<ApplicationDbContext>(option =>
             {
                 option.UseSqlServer(
-               configuration.GetConnectionString("DefaultConnection")
+               configuration.GetRequiredConnectionString("DefaultConnection")
            );
             });
         

@@ -340,8 +340,6 @@
 |---|---|
 | AUTH-04, AUTH-05, PROD-10, PROD-11 | لا يوجد Validation على الـ DTOs (لا DataAnnotations ولا FluentValidation) |
 | AUTH-11 | رسالة "No account found with this email" في استرجاع كلمة السر تكشف وجود الحساب |
-| AUTH-17 | رمز الاسترجاع لا يُستهلك بعد الاستخدام الأول |
-| PROD-12, PROD-13, PROD-14, PRES-06 | لا يوجد Global Exception Handler — الاستثناء يصل كـ `500` بدل رسالة واضحة |
 
 > **ملاحظة:** حالات السلة (`CART-04`, `CART-05`, `CART-12` … `CART-14`) لم تعد ضمن المتوقع فشلها — التحقق منها صار داخل `CartService` مباشرة، بمعزل عن الـ DTO Validation.
 
